@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device-ID Чат</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .chat-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            min-height: 80vh;
+        }
+
+        /* Сайдбар */
+        .sidebar {
+            width: 300px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #3498db;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .device-id {
+            font-size: 12px;
+            color: #bdc3c7;
+            word-break: break-all;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .device-id:hover {
+            color: #ecf0f1;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .online-users {
+            flex: 1;
+            margin-top: 20px;
+        }
+
+        .online-users h3 {
+            margin-bottom: 15px;
+            color: #ecf0f1;
+        }
+
+        .user-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #34495e;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-status {
+            width: 8px;
+            height: 8px;
+            background: #2ecc71;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        /* Основная область чата */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .debug-info {
+            font-size: 12px;
+            color: #bdc3c7;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            max-width: 70%;
+            position: relative;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.own {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.other {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .message.own .message-header {
+            color: #e1f5fe;
+        }
+
+        .message.other .message-header {
+            color: #7f8c8d;
+        }
+
+        .message-text {
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .system-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            margin: 10px 0;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e8ed;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: #3498db;
+        }
+
+        .send-button {
+            padding: 15px 25px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .send-button:hover {
+            background: #2980b9;
+        }
+
+        .send-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        /* Регистрация */
+        .registration {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .registration h2 {
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+
+        .username-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .username-input:focus {
+            border-color: #3498db;
+        }
+
+        .register-button {
+            width: 100%;
+            padding: 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .register-button:hover {
+            background: #2980b9;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #2ecc71;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .notification.warning {
+            background: #f39c12;
+        }
+
+        /* Статус соединения */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+                min-height: 90vh;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 200px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .chat-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .debug-info {
+                font-size: 10px;
+            }
+        }
+
+        /* Загрузка */
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+
+        .typing-indicator {
+            padding: 10px;
+            color: #7f8c8d;
+            font-style: italic;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Статус соединения -->
+    <div id="connectionStatus" class="connection-status hidden">
+        Подключение...
+    </div>
+
+    <!-- Экран регистрации -->
+    <div id="registration" class="registration">
+        <h2>Добро пожаловать в чат!</h2>
+        <input type="text" id="usernameInput" class="username-input" placeholder="Введите ваше имя" maxlength="20">
+        <button id="registerButton" class="register-button">Войти в чат</button>
+        <div style="margin-top: 20px; font-size: 12px; color: #7f8c8d;">
+            При первом входе будет создан уникальный device-id
+        </div>
+    </div>
+
+    <!-- Основной интерфейс чата -->
+    <div id="chatInterface" class="chat-container hidden">
+        <!-- Сайдбар -->
+        <div class="sidebar">
+            <div class="user-profile">
+                <div class="avatar" id="userAvatar">U</div>
+                <h3 id="userName">Пользователь</h3>
+                <div class="device-id" id="userDeviceId" title="Нажмите для копирования">device-id: загрузка...</div>
+                <button class="logout-btn" onclick="chatApp.logout()">Выйти</button>
+            </div>
+            
+            <div class="online-users">
+                <h3>Онлайн (<span id="onlineCount">0</span>)</h3>
+                <ul class="user-list" id="userList">
+                    <li class="loading">Загрузка...</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Область чата -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <h2>Общий чат</h2>
+                <div class="debug-info">
+                    Сообщений: <span id="messageCount">0</span> | 
+                    Пользователей: <span id="userCount">0</span>
+                </div>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="system-message">
+                    Добро пожаловать в чат! Сообщения загружаются...
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="messageInput" class="message-input" placeholder="Введите сообщение..." maxlength="500" disabled>
+                <button id="sendButton" class="send-button" disabled>Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        class ChatApp {
+            constructor() {
+                this.baseUrl = window.location.origin + '/api';
+                this.deviceId = null;
+                this.username = null;
+                this.updateInterval = null;
+                this.isConnected = false;
+                
+                console.log('🚀 ChatApp initialized');
+                console.log('📍 Base URL:', this.baseUrl);
+                
+                this.initializeEventListeners();
+                this.checkExistingSession();
+                this.testConnection();
+            }
+
+            // Тестирование соединения с сервером
+            async testConnection() {
+                try {
+                    const response = await fetch(`${this.baseUrl}/health`);
+                    if (response.ok) {
+                        this.setConnectionStatus(true);
+                        console.log('✅ Server connection OK');
+                    } else {
+                        this.setConnectionStatus(false);
+                        console.error('❌ Server connection failed');
+                    }
+                } catch (error) {
+                    this.setConnectionStatus(false);
+                    console.error('❌ Server connection error:', error);
+                }
+            }
+
+            // Установка статуса соединения
+            setConnectionStatus(connected) {
+                this.isConnected = connected;
+                const statusElement = document.getElementById('connectionStatus');
+                
+                if (connected) {
+                    statusElement.textContent = '✅ Подключено';
+                    statusElement.className = 'connection-status connected';
+                } else {
+                    statusElement.textContent = '❌ Нет соединения';
+                    statusElement.className = 'connection-status disconnected';
+                }
+                
+                statusElement.classList.remove('hidden');
+            }
+
+            // Проверка существующей сессии
+            async checkExistingSession() {
+                const savedDeviceId = localStorage.getItem('chat_device_id');
+                const savedUsername = localStorage.getItem('chat_username');
+                
+                console.log('🔍 Checking existing session:', { 
+                    savedDeviceId: savedDeviceId ? `${savedDeviceId.substring(0, 8)}...` : 'none',
+                    savedUsername: savedUsername || 'none'
+                });
+                
+                if (savedDeviceId && savedUsername) {
+                    this.deviceId = savedDeviceId;
+                    this.username = savedUsername;
+                    
+                    // Проверяем валидность device_id
+                    const isValid = await this.validateDeviceId();
+                    if (isValid) {
+                        console.log('✅ Valid session found, starting chat...');
+                        this.startChat();
+                    } else {
+                        console.log('❌ Invalid session, clearing storage...');
+                        this.showNotification('Сессия устарела. Пожалуйста, войдите заново.', true);
+                        this.clearStorage();
+                    }
+                } else {
+                    console.log('📝 No existing session found');
+                }
+            }
+
+            // Проверка валидности device_id
+            async validateDeviceId() {
+                try {
+                    console.log('🔐 Validating device_id:', `${this.deviceId.substring(0, 8)}...`);
+                    const response = await fetch(`${this.baseUrl}/user/profile?device_id=${this.deviceId}`);
+                    
+                    if (response.ok) {
+                        console.log('✅ Device ID is valid');
+                        return true;
+                    } else {
+                        console.log('❌ Device ID is invalid');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('❌ Device validation error:', error);
+                    return false;
+                }
+            }
+
+            // Очистка хранилища
+            clearStorage() {
+                localStorage.removeItem('chat_device_id');
+                localStorage.removeItem('chat_username');
+                this.deviceId = null;
+                this.username = null;
+            }
+
+            // Инициализация обработчиков событий
+            initializeEventListeners() {
+                // Регистрация
+                document.getElementById('registerButton').addEventListener('click', () => this.registerUser());
+                document.getElementById('usernameInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.registerUser();
+                });
+
+                // Отправка сообщений
+                document.getElementById('sendButton').addEventListener('click', () => this.sendMessage());
+                document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+
+                // Копирование device_id
+                document.getElementById('userDeviceId').addEventListener('click', () => this.copyDeviceId());
+            }
+
+            // Копирование device_id в буфер обмена
+            copyDeviceId() {
+                if (this.deviceId) {
+                    navigator.clipboard.writeText(this.deviceId).then(() => {
+                        this.showNotification('Device ID скопирован!');
+                    }).catch(() => {
+                        // Fallback для старых браузеров
+                        const textArea = document.createElement('textarea');
+                        textArea.value = this.deviceId;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        this.showNotification('Device ID скопирован!');
+                    });
+                }
+            }
+
+            // Регистрация пользователя
+            async registerUser() {
+                const usernameInput = document.getElementById('usernameInput');
+                const username = usernameInput.value.trim();
+
+                if (!username) {
+                    this.showNotification('Введите имя пользователя', true);
+                    return;
+                }
+
+                if (username.length < 2) {
+                    this.showNotification('Имя должно содержать минимум 2 символа', true);
+                    return;
+                }
+
+                try {
+                    console.log('📝 Registering user:', username);
+                    
+                    const response = await fetch(`${this.baseUrl}/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username })
+                    });
+
+                    const data = await response.json();
+                    console.log('📨 Registration response:', data);
+
+                    if (response.ok) {
+                        this.deviceId = data.device_id;
+                        this.username = username;
+                        
+                        // Сохраняем в localStorage
+                        localStorage.setItem('chat_device_id', this.deviceId);
+                        localStorage.setItem('chat_username', this.username);
+                        
+                        console.log('✅ User registered successfully:', {
+                            username: this.username,
+                            deviceId: `${this.deviceId.substring(0, 8)}...`
+                        });
+                        
+                        this.startChat();
+                        this.showNotification('Успешный вход в чат!');
+                    } else {
+                        console.error('❌ Registration failed:', data.error);
+                        this.showNotification(data.error || 'Ошибка регистрации', true);
+                    }
+                } catch (error) {
+                    console.error('❌ Registration error:', error);
+                    this.showNotification('Ошибка соединения: ' + error.message, true);
+                }
+            }
+
+            // Запуск чата
+            startChat() {
+                console.log('💬 Starting chat session...');
+                
+                document.getElementById('registration').classList.add('hidden');
+                document.getElementById('chatInterface').classList.remove('hidden');
+                
+                // Обновляем интерфейс
+                document.getElementById('userName').textContent = this.username;
+                document.getElementById('userAvatar').textContent = this.username.charAt(0).toUpperCase();
+                document.getElementById('userDeviceId').textContent = `device-id: ${this.deviceId.substring(0, 8)}...`;
+                document.getElementById('userDeviceId').title = `Нажмите для копирования: ${this.deviceId}`;
+                
+                // Активируем поле ввода
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                
+                // Загружаем данные
+                this.loadMessages();
+                this.loadOnlineUsers();
+                this.updateStats();
+                
+                // Запускаем автообновление
+                this.startAutoUpdate();
+                
+                console.log('✅ Chat started successfully');
+            }
+
+            // Запуск автообновления
+            startAutoUpdate() {
+                // Останавливаем предыдущий интервал, если был
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                
+                // Обновляем каждые 3 секунды
+                this.updateInterval = setInterval(() => {
+                    this.loadMessages();
+                    this.loadOnlineUsers();
+                    this.updateStats();
+                    this.testConnection();
+                }, 3000);
+                
+                console.log('🔄 Auto-update started');
+            }
+
+            // Обновление статистики
+            updateStats() {
+                document.getElementById('messageCount').textContent = document.querySelectorAll('.message').length;
+                document.getElementById('userCount').textContent = document.querySelectorAll('.user-item').length;
+            }
+
+            // Отправка сообщения
+            async sendMessage() {
+                const messageInput = document.getElementById('messageInput');
+                const message = messageInput.value.trim();
+
+                if (!message || !this.deviceId) {
+                    return;
+                }
+
+                const sendButton = document.getElementById('sendButton');
+                sendButton.disabled = true;
+                sendButton.textContent = 'Отправка...';
+
+                try {
+                    console.log('📤 Sending message:', message.substring(0, 50) + '...');
+                    
+                    const response = await fetch(`${this.baseUrl}/send_message`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            device_id: this.deviceId,
+                            message: message
+                        })
+                    });
+
+                    const data = await response.json();
+                    console.log('📨 Send message response:', data);
+
+                    if (response.ok) {
+                        messageInput.value = '';
+                        this.loadMessages();
+                        this.loadOnlineUsers();
+                    } else {
+                        console.error('❌ Send message failed:', data.error);
+                        this.showNotification(data.error || 'Ошибка отправки', true);
+                        if (response.status === 401) {
+                            this.handleSessionExpired();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Send message error:', error);
+                    this.showNotification('Ошибка соединения при отправке', true);
+                    this.setConnectionStatus(false);
+                } finally {
+                    sendButton.disabled = false;
+                    sendButton.textContent = 'Отправить';
+                }
+            }
+
+            // Обработка истекшей сессии
+            handleSessionExpired() {
+                this.showNotification('Сессия устарела. Пожалуйста, войдите заново.', true);
+                this.clearStorage();
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+
+            // Загрузка сообщений
+            async loadMessages() {
+                if (!this.deviceId) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${this.baseUrl}/messages?device_id=${this.deviceId}`);
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.displayMessages(data.messages);
+                    } else {
+                        console.error('❌ Error loading messages:', data.error);
+                        if (response.status === 401) {
+                            this.handleSessionExpired();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Load messages error:', error);
+                    this.setConnectionStatus(false);
+                }
+            }
+
+            // Отображение сообщений
+            displayMessages(messages) {
+                const container = document.getElementById('messagesContainer');
+                
+                if (messages.length === 0) {
+                    container.innerHTML = '<div class="system-message">Нет сообщений. Будьте первым!</div>';
+                    return;
+                }
+
+                container.innerHTML = messages.map(message => `
+                    <div class="message ${message.device_id === this.deviceId ? 'own' : 'other'}">
+                        <div class="message-header">
+                            <strong>${this.escapeHtml(message.username)}</strong>
+                            <span>${message.time_display}</span>
+                        </div>
+                        <div class="message-text">${this.escapeHtml(message.message)}</div>
+                    </div>
+                `).join('');
+
+                // Прокрутка вниз
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // Загрузка списка онлайн пользователей
+            async loadOnlineUsers() {
+                if (!this.deviceId) {
+                    return;
+                }
+
+                try {
+                    console.log('👥 Loading online users...');
+                    
+                    const response = await fetch(`${this.baseUrl}/online_users?device_id=${this.deviceId}`);
+                    const data = await response.json();
+                    
+                    console.log('📊 Online users response:', data);
+
+                    if (response.ok) {
+                        this.displayOnlineUsers(data.online_users);
+                    } else {
+                        console.error('❌ Error loading online users:', data.error);
+                        if (response.status === 401) {
+                            this.handleSessionExpired();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Load online users error:', error);
+                    this.setConnectionStatus(false);
+                }
+            }
+
+            // Отображение онлайн пользователей
+            displayOnlineUsers(users) {
+                const container = document.getElementById('userList');
+                const countElement = document.getElementById('onlineCount');
+                
+                countElement.textContent = users.length;
+                
+                if (users.length === 0) {
+                    container.innerHTML = '<li class="user-item">Нет активных пользователей</li>';
+                    return;
+                }
+                
+                container.innerHTML = users.map(user => `
+                    <li class="user-item">
+                        <div class="user-status"></div>
+                        ${this.escapeHtml(user.username)}
+                    </li>
+                `).join('');
+            }
+
+            // Показ уведомлений
+            showNotification(message, isError = false, isWarning = false) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                
+                notification.className = 'notification';
+                if (isError) {
+                    notification.classList.add('error');
+                } else if (isWarning) {
+                    notification.classList.add('warning');
+                }
+                
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 4000);
+            }
+
+            // Экранирование HTML
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Выход из чата
+            logout() {
+                console.log('👋 Logging out...');
+                
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                
+                this.clearStorage();
+                this.showNotification('Вы вышли из чата');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        }
+
+        // Инициализация приложения при загрузке страницы
+        let chatApp;
+        document.addEventListener('DOMContentLoaded', () => {
+            chatApp = new ChatApp();
+            window.chatApp = chatApp; // Делаем глобально доступным для отладки
+        });
+
+        // Глобальные функции для отладки
+        window.debugChat = function() {
+            console.log('=== CHAT DEBUG INFO ===');
+            console.log('App:', chatApp);
+            console.log('LocalStorage device_id:', localStorage.getItem('chat_device_id'));
+            console.log('LocalStorage username:', localStorage.getItem('chat_username'));
+        };
+
+        window.clearChatData = function() {
+            localStorage.clear();
+            console.log('🗑️ All chat data cleared');
+            location.reload();
+        };
+    </script>
+</body>
+</html>
